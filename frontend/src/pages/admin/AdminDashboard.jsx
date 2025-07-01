@@ -19,6 +19,26 @@ export default function AdminDashboard() {
     contacts: [],
   });
   const [loading, setLoading] = useState(true);
+const [productCount, setProductCount] = useState(0);
+const [orderCount, setOrderCount] = useState(0);
+
+useEffect(() => {
+  const updateCounts = () => {
+    const storedProducts = JSON.parse(localStorage.getItem("products")) || [];
+    const storedOrders = JSON.parse(localStorage.getItem("orders")) || [];
+    setProductCount(storedProducts.length);
+    setOrderCount(storedOrders.length);
+  };
+
+  updateCounts();
+  window.addEventListener("productsUpdated", updateCounts);
+  window.addEventListener("ordersUpdated", updateCounts);
+  return () => {
+    window.removeEventListener("productsUpdated", updateCounts);
+    window.removeEventListener("ordersUpdated", updateCounts);
+  };
+}, []);
+
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -105,13 +125,13 @@ export default function AdminDashboard() {
           <StatCard
             icon={<FaUtensils size={28} />}
             label="Total Products"
-            value={stats.products.length}
+            value={stats.products?.length || productCount}
             color="from-orange-400 to-orange-600"
           />
           <StatCard
             icon={<FaShoppingCart size={28} />}
             label="Total Orders"
-            value={stats.orders.length}
+            value={stats.orders.length || orderCount}
             color="from-blue-400 to-blue-600"
           />
           <StatCard
