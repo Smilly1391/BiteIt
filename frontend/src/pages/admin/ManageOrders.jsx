@@ -36,6 +36,7 @@ const ManageOrders = () => {
     setOrders(updated);
     localStorage.setItem("orders", JSON.stringify(updated));
     setSelectedOrderId(null);
+    window.dispatchEvent(new Event("ordersUpdated"));
   };
 
   const handleStatusChange = (orderId, newStatus) => {

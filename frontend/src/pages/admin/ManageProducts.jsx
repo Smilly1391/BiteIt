@@ -18,6 +18,8 @@ export default function ManageProducts() {
     image: "",
   });
 
+  
+
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("products"));
     if (stored && Array.isArray(stored)) {
@@ -40,6 +42,8 @@ export default function ManageProducts() {
     localStorage.setItem("products", JSON.stringify(updated));
     if (editIndex === index) setEditIndex(null);
     setShowConfirmIndex(null);
+    window.dispatchEvent(new Event("productsUpdated"));
+
   };
 
   const handleSave = () => {
