@@ -4,6 +4,7 @@ import { FaShoppingCart } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import menuItems from "../data/menuItems";
 
+
 const Menu = () => {
   const [filter, setFilter] = useState("All");
   const [addingId, setAddingId] = useState(null);

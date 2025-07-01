@@ -1,34 +1,39 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState(''); // success or error message
   const [error, setError] = useState('');
+const isValidEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setMessage('');
 
-    try {
-      const res = await fetch('/api/forgot-password', { // replace with your API endpoint
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setMessage('');
 
-      if (!res.ok) {
-        const errData = await res.json();
-        setError(errData.message || 'Failed to send reset link');
-        return;
-      }
+  if (!isValidEmail(email)) {
+    setError('Enter a valid email (must include @ and end with .com)');
+    return;
+  }
 
-      setMessage('If this email is registered, a reset link has been sent.');
-      setEmail('');
-    } catch {
-      setError('Network error, please try again.');
-    }
-  };
+  try {
+    const res = await axios.post('http://localhost:5000/api/auth/forgot-password', {
+      email,
+    });
+
+    // Regardless of whether email exists, show generic message
+    setMessage('If this email is registered, a reset link has been sent.');
+    setEmail('');
+  } catch (err) {
+    const errorMsg = err?.response?.data?.message || 'Failed to send reset link';
+    setError(errorMsg);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-indigo-100 dark:bg-gray-900 transition-colors duration-300 px-4">

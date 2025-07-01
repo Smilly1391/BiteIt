@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import axios from 'axios';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -27,52 +28,56 @@ const Login = () => {
     setTimeout(() => setToast({ message: "", type: "" }), 2000);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setLoading(true);
 
-    if (!isValidEmail(email)) {
-      showToast("Enter a valid email (must include @ and end with .com)");
-      setLoading(false);
-      return;
-    }
 
-    if (!isValidPassword(password)) {
-      showToast("Password must be 8+ characters and alphanumeric");
-      setLoading(false);
-      return;
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const user = users.find(
-      (u) => u.email === email && u.password === password
-    );
+  if (!isValidEmail(email)) {
+    showToast("Enter a valid email (must include @ and end with .com)");
+    setLoading(false);
+    return;
+  }
+
+  if (!isValidPassword(password)) {
+    showToast("Password must be 8+ characters and alphanumeric");
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const res = await axios.post('http://localhost:5000/api/auth/login', {
+      email,
+      password,
+    });
+
+    const { user, token } = res.data;
+
+    // Save token to localStorage (or cookie if needed)
+    localStorage.setItem('token', token);
+
+    // Role assignment fallback
+    const userRole = user.email === 'admin@gmail.com' ? 'admin' : user.role || 'user';
+
+    login({
+      email: user.email,
+      username: user.username,
+      role: userRole,
+    });
+
+    showToast("Login successful!", "success");
+    setLoading(false);
 
     setTimeout(() => {
-      if (!user) {
-        showToast("Invalid email or password");
-        setLoading(false);
-        return;
-      }
+      navigate(userRole === 'admin' ? '/admin/dashboard' : '/');
+    }, 2000);
+  } catch (err) {
+    showToast(err?.response?.data?.message || "Invalid email or password");
+    setLoading(false);
+  }
+};
 
-      // Explicitly assign role for admin email
-      const userRole =
-        user.email === "admin@gmail.com" ? "admin" : user.role || "user";
-
-      login({
-        email: user.email,
-        username: user.username,
-        role: userRole,
-      });
-
-      setLoading(false);
-      showToast("Login successful!", "success");
-
-      setTimeout(() => {
-        navigate("/");
-      }, 2000);
-    }, 1000);
-  };
 
   return (
     <div
