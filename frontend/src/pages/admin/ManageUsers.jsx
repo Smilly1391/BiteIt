@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
+import axios from "axios";
 
 const ManageUsers = () => {
   const navigate = useNavigate();
@@ -8,18 +9,50 @@ const ManageUsers = () => {
   const [selectedEmail, setSelectedEmail] = useState(null);
 
   useEffect(() => {
-    const storedUsers = JSON.parse(localStorage.getItem("users")) || [];
-    setUsers(storedUsers);
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:5000/api/users", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setUsers(res.data);
+      } catch (err) {
+        console.error("Error loading users:", err);
+      }
+    };
+
+    fetchUsers();
   }, []);
 
   const confirmDelete = (email) => setSelectedEmail(email);
 
-  const handleDelete = () => {
-    const filtered = users.filter((u) => u.email !== selectedEmail);
+const handleDelete = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const userToDelete = users.find((u) => u.email === selectedEmail);
+
+    if (!userToDelete || !userToDelete._id) {
+      alert("Invalid user data.");
+      return;
+    }
+
+    await axios.delete(`http://localhost:5000/api/users/${userToDelete._id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const filtered = users.filter((u) => u._id !== userToDelete._id);
     setUsers(filtered);
-    localStorage.setItem("users", JSON.stringify(filtered));
     setSelectedEmail(null);
-  };
+  } catch (error) {
+    console.error("Delete failed:", error);
+    alert("Failed to delete user.");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-100 p-8 dark:bg-gray-900">
@@ -48,7 +81,7 @@ const ManageUsers = () => {
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.email} className="border-b dark:border-gray-700">
+                <tr key={user._id} className="border-b dark:border-gray-700">
                   <td className="p-3">{user.email}</td>
                   <td className="p-3">{user.username}</td>
                   <td className="p-3">

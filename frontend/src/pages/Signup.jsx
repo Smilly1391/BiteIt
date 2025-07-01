@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import axios from "axios";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -19,46 +20,63 @@ const Signup = () => {
     setDarkMode(localStorage.getItem("theme") === "dark");
   }, []);
 
-  const isValidEmail = (email) => email.includes("@") && email.endsWith(".com");
+  const isValidEmail = (email) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const isValidPassword = (password) =>
-    password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password);
+    /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(password);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
+  setSuccessMessage("");
+  setLoading(true);
 
-    if (!isValidEmail(email)) {
-      setError("Please enter a valid email (must include @ and end with .com)");
-      setLoading(false);
-      return;
-    }
-
-    if (!isValidPassword(password)) {
-      setError("Password must be at least 8 characters long and alphanumeric");
-      setLoading(false);
-      return;
-    }
-
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    if (users.some((user) => user.email === email)) {
-      setError("Email already registered.");
-      setLoading(false);
-      return;
-    }
-
-    users.push({ email, username, password, isAdmin });
-    localStorage.setItem("users", JSON.stringify(users));
-
+  if (!isValidEmail(email)) {
+    setError("Please enter a valid email (must include @ and end with .com)");
     setLoading(false);
-    setSuccessMessage("Account created successfully!");
+    return;
+  }
 
+  if (!isValidPassword(password)) {
+    setError("Password must be at least 8 characters long and alphanumeric");
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const res = await axios.post("http://localhost:5000/api/auth/signup", {
+      username,
+      email,
+      password,
+      role: isAdmin ? "admin" : "user",
+    });
+
+    const { token, user } = res.data;
+
+    // Store user info and token in localStorage
+    localStorage.setItem("token", token);
+    localStorage.setItem("loggedInUser", JSON.stringify(user));
+
+    setSuccessMessage("Account created and logged in!");
+    setLoading(false);
+
+    // Redirect based on role
     setTimeout(() => {
-      setSuccessMessage("");
-      navigate("/login");
-    }, 2000);
-  };
+      if (user.role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/");
+      }
+    }, 1500);
+  } catch (err) {
+    const errorMessage =
+      err?.response?.data?.message || "Signup failed. Try again.";
+    setError(errorMessage);
+    setLoading(false);
+  }
+};
+
 
   return (
     <div

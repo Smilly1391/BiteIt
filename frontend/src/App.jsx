@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageOrders from "./pages/admin/ManageOrders";
 import ManageProducts from "./pages/admin/ManageProducts";
 import ManageUsers from "./pages/admin/ManageUsers";
+import AdminContacts from "./pages/admin/AdminContacts";
 
 // Route guard
 import AdminPrivateRoute from "./routes/AdminPrivateRoute";
@@ -81,6 +82,14 @@ function App() {
           element={
             <AdminPrivateRoute>
               <ManageUsers />
+            </AdminPrivateRoute>
+          }
+        />
+                <Route
+          path="/admin/contacts"
+          element={
+            <AdminPrivateRoute>
+              <AdminContacts />
             </AdminPrivateRoute>
           }
         />

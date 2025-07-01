@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
 const AdminLogin = () => {
@@ -11,50 +12,48 @@ const AdminLogin = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const adminEmail = "admin@gmail.com";
-  const adminPassword = "admin123";
-
   useEffect(() => {
     setDarkMode(localStorage.getItem("theme") === "dark");
   }, []);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    setTimeout(() => {
-      if (email === adminEmail && password === adminPassword) {
-        localStorage.setItem("adminLoggedIn", "true");
+    try {
+      const res = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password,
+      });
 
-        const users = JSON.parse(localStorage.getItem("users")) || [];
-        const existing = users.find((u) => u.email === adminEmail);
-        if (!existing) {
-          users.push({
-            email: adminEmail,
-            username: "Admin",
-            password: adminPassword,
-            isAdmin: true, // <-- mark admin flag
-          });
-          localStorage.setItem("users", JSON.stringify(users));
-        }
+      const { token, user } = res.data;
 
-        localStorage.setItem(
-          "loggedInUser",
-          JSON.stringify({
-            email: adminEmail,
-            username: "Admin",
-            isAdmin: true,
-          })
-        );
-
+      if (user.role !== "admin") {
+        setError("Access denied: not an admin user");
         setLoading(false);
-        navigate("/admin/dashboard");
-      } else {
-        setError("Invalid admin credentials!");
-        setLoading(false);
+        return;
       }
-    }, 1000);
+
+      // Store token and user info
+      localStorage.setItem("token", token);
+      localStorage.setItem(
+        "loggedInUser",
+        JSON.stringify({
+          email: user.email,
+          username: user.username,
+          role: user.role,
+        })
+      );
+
+      setLoading(false);
+      navigate("/admin/dashboard");
+    } catch (err) {
+      const errorMsg =
+        err?.response?.data?.message || "Invalid email or password";
+      setError(errorMsg);
+      setLoading(false);
+    }
   };
 
   return (

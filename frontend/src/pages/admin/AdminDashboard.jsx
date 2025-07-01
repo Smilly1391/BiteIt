@@ -6,7 +6,9 @@ import {
   FaShoppingCart,
   FaBoxOpen,
   FaUserCog,
+  FaEnvelope,
 } from "react-icons/fa";
+import axios from "axios";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -14,27 +16,68 @@ export default function AdminDashboard() {
     users: [],
     products: [],
     orders: [],
+    contacts: [],
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem("adminLoggedIn");
-    if (!isAdmin) navigate("/admin/login");
+    const token = localStorage.getItem("token");
+    const rawUser = localStorage.getItem("loggedInUser");
 
-    const storedUsers = JSON.parse(localStorage.getItem("users")) || [];
-    const storedOrders = JSON.parse(localStorage.getItem("orders")) || [];
-    const storedProducts = JSON.parse(localStorage.getItem("products")) || [];
+    let user = null;
+    try {
+      user = JSON.parse(rawUser);
+    } catch {
+      user = null;
+    }
 
-    setStats({
-      users: storedUsers,
-      orders: storedOrders,
-      products: storedProducts,
-    });
-  }, []);
+    if (!token || !user || user.role !== "admin") {
+      navigate("/admin/login");
+      return;
+    }
+
+    const fetchStats = async () => {
+      try {
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+
+        const [userRes, orderRes, productRes, contactRes] = await Promise.all([
+          axios.get("http://localhost:5000/api/users", config),
+          axios.get("http://localhost:5000/api/orders", config),
+          axios.get("http://localhost:5000/api/products", config),
+          axios.get("http://localhost:5000/api/contact", config),
+        ]);
+
+        setStats({
+          users: userRes.data || [],
+          orders: orderRes.data || [],
+          products: productRes.data || [],
+          contacts: contactRes.data || [],
+        });
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("adminLoggedIn");
-    navigate("/"); // Redirect to home
+    localStorage.removeItem("token");
+    localStorage.removeItem("loggedInUser");
+    navigate("/");
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen dark:bg-black">
+        <div className="text-orange-500 text-xl font-semibold animate-pulse">
+          Loading dashboard...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-orange-100 to-white dark:from-black dark:via-red-950 dark:to-black dark:text-white p-6 transition-colors duration-300">
@@ -58,7 +101,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           <StatCard
             icon={<FaUtensils size={28} />}
             label="Total Products"
@@ -77,10 +120,16 @@ export default function AdminDashboard() {
             value={stats.users.length}
             color="from-green-400 to-green-600"
           />
+          <StatCard
+            icon={<FaEnvelope size={28} />}
+            label="Contact Messages"
+            value={stats.contacts?.length || 0}
+            color="from-purple-400 to-purple-600"
+          />
         </div>
 
         {/* Admin Navigation */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
           <NavCard
             to="/admin/products"
             title="Manage Products"
@@ -95,6 +144,11 @@ export default function AdminDashboard() {
             to="/admin/users"
             title="Manage Users"
             icon={<FaUserCog />}
+          />
+          <NavCard
+            to="/admin/contacts"
+            title="Contact Messages"
+            icon={<FaEnvelope />}
           />
         </div>
       </div>
