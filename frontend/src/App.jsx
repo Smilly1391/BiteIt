@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 
 // Public pages
+import Join from "./pages/join";
 import Home from "./pages/Home";
 import Menu from "./pages/Menu";
 import AboutUs from "./pages/About";
@@ -40,6 +41,7 @@ function App() {
 
       <Routes>
         {/* Public Routes */}
+        <Route path="/join" element={<Join />} />
         <Route path="/" element={<Home />} />
         <Route path="/menu" element={<Menu />} />
         <Route path="/about" element={<AboutUs />} />
